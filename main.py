@@ -69,7 +69,10 @@ async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
     # Hash it another time to produce a secure access token
     user_obj_safe = {}
     user_obj_safe = user_obj.dict()
-    user_obj_safe['password_hash'] = bcrypt.hash(user_obj.dict['password_hash'])
+    for _ in range(10):
+        user_obj_safe['password_hash'] = bcrypt.hash(
+            user_obj_safe['password_hash'])
+        print(user_obj_safe['password_hash'])
     token = jwt.encode(user_obj_safe, JWT_SECRET)
     
     return {'access_token': token, 'token_type': 'bearer' }
