@@ -27,6 +27,8 @@ v0.0.0
 - user login
 v0.0.1
 - user profile
+v0.0.2
+- email verification (using mail trap)
 
 
 Dependencies
@@ -37,7 +39,7 @@ python==3.10.4
 
 # Super Packages
 fastapi==0.81.0
-hypercorn==0.13.2
+uvicorn==0.18.3
 tortoise-orm==0.19.2
 python-multipart==0.0.5
 passlib==1.7.4

@@ -1,13 +1,16 @@
+# External Packages import
+import uvicorn
 import jwt
+from passlib.hash import bcrypt
+from uuid import UUID
 
-# Packages
+# FastAPI library import
 from fastapi import FastAPI, APIRouter
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from tortoise.contrib.fastapi import register_tortoise
-from passlib.hash import bcrypt
 
-# Project models
+# FastAPI models import
 from models import Users, Users_Pydantic, UsersIn_Pydantic
 
 app = FastAPI()
@@ -17,13 +20,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 JWT_SECRET = 'jpoja"%%6())iip"jçu%2é"!!ué"z4d484s686q46q4dzjziç"uçu'
 
 
-async def authenticate_user(username: str, password: str):
+async def authenticate_user(email: str, password: str):
     """ Authenticate a user with his credentials
 
     Parameters
     ----------
-    username : str, 
-        Account username used in registration form
+    email : str, 
+        Account email used in registration form
     password : str, 
         Account password used in registration form
 
@@ -32,7 +35,7 @@ async def authenticate_user(username: str, password: str):
     Users instance, 
         Users instance of authenticated user
     """
-    user = await Users.get(username=username)
+    user = await Users.get(email=email)
     if not user:
         return False
     if not user.verify_password(password):
@@ -59,14 +62,18 @@ async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
     if not user:
         return {'error': 'invalid credentials'}
     
-    # Create new user with credentials: username and hashed password
+    print("authentification : OK")
+    # Create new user with credentials: email and hashed password
     user_obj = await Users_Pydantic.from_tortoise_orm(user)
+    print("user instanciation : OK")
 
     # To improve security: Remove password hash from the payload
     # (modify user_obj.dict())
-    print(user_obj.dict().pop('password_hash'))
-    print('dict without password_hash', user_obj.dict())
-    token = jwt.encode(user_obj.dict().pop('password_hash'), JWT_SECRET)
+    # print(user_obj.dict().pop('password_hash'))
+    # print('dict without password_hash', user_obj.dict())
+    # token = jwt.encode(user_obj.dict().pop('password_hash'), JWT_SECRET)
+    token = jwt.encode(user_obj.dict(), JWT_SECRET)
+    print("token encoding : OK")
 
     return {'access_token': token, 'token_type': 'bearer' }
 
@@ -102,7 +109,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     Returns
     -------
     Users model instance, 
-        User model with attributes registered: id, username, password_hash
+        User model with attributes registered: id, email, password_hash
 
     Raises
     ------
@@ -112,13 +119,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         # decode the token
         payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
-        user = await Users.get(id=payload.get('id'))
-    
+        user = await Users.get(uid=payload.get('uid'))
+
     except Exception as exc:
         print('Exception', exc)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Invalid username or password'
+            detail='Invalid email or password'
         )
         
     return await Users_Pydantic.from_tortoise_orm(user)
@@ -136,15 +143,27 @@ async def create_user(user: UsersIn_Pydantic):
     Returns
     -------
     Users instance, 
-        User instance with input credentials, username and hashed password
+        User instance with input credentials, email and hashed password
     """
-    user_obj = Users(
-        username=user.username,
-        password_hash=bcrypt.hash(user.password_hash)
-    )
-    await user_obj.save()
-    return await Users_Pydantic.from_tortoise_orm(user_obj)
+    print("create user ...")
 
+    user_obj = Users(
+        email=user.email,
+        password_hash=bcrypt.hash(user.password_hash),
+    )
+    print("User creation: OK")
+
+    if user_obj.verify_email():
+        await user_obj.save()
+        return await Users_Pydantic.from_tortoise_orm(user_obj)
+        print("User save: OK")
+
+    else:
+        print("ERROR")
+        raise HTTPException(
+            status_code=401,
+            detail=f'Identifiant have to an email'
+        )
 
 @app.get('/users/me', response_model=Users_Pydantic)
 async def get_user(user: Users_Pydantic = Depends(get_current_user)):
@@ -153,14 +172,43 @@ async def get_user(user: Users_Pydantic = Depends(get_current_user)):
     Parameters
     ----------
     user : Users_Pydantic, optional
-        User with username and hashed password, by default Depends(get_current_user)
+        User with email and hashed password, by default Depends(get_current_user)
 
     Returns
     -------
     Users instance
-        User with username and hashed password registered in database
+        User with email and hashed password registered in database
     """
     return user
+
+
+@app.delete('/users/{user_uid}')
+async def delete_user(user_uid: UUID):
+    user = await Users.get(uid=user_uid)
+    if user.uid == user_uid:
+        user.delete()
+        return
+
+    raise HTTPException(
+        status_code=404,
+        detail=f'user with id: "{user_uid}" does not exists'
+    )
+
+
+@app.put("/users/{user_id}")
+async def update_user(user_update: UsersIn_Pydantic, user_uid: UUID):
+    user_list = await Users.all()
+    for user in user_list:
+        if user.uid == user_uid:
+            if user_update.email is not None:
+                user.email = user_update.email
+            return
+
+    raise HTTPException(
+        status_code=404,
+        detail=f'user with id "{user_uid}" does not exists'
+    )
+
 
 register_tortoise(
     app,
@@ -169,3 +217,7 @@ register_tortoise(
     generate_schemas=True,  # Create Table if it not exist
     add_exception_handlers=True,
 )
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
