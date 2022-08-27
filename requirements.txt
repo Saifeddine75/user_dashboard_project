@@ -1,45 +1,7 @@
-aiosqlite==0.17.0
-anyio==3.6.1
-astroid @ file:///C:/Windows/TEMP/abs_b0dtxgpicv/croots/recipe/astroid_1659023126745/work
-autopep8 @ file:///opt/conda/conda-bld/autopep8_1650463822033/work
-bcrypt==4.0.0
-certifi @ file:///C:/Windows/TEMP/abs_e9b7158a-aa56-4a5b-87b6-c00d295b01fanefpc8_o/croots/recipe/certifi_1655968940823/work/certifi
-colorama @ file:///C:/Windows/TEMP/abs_9439aeb1-0254-449a-96f7-33ab5eb17fc8apleb4yn/croots/recipe/colorama_1657009099097/work
-dill @ file:///tmp/build/80754af9/dill_1623919422540/work
-distlib==0.3.4
 fastapi==0.81.0
-filelock==3.4.2
-h11==0.13.0
-h2==4.1.0
-hpack==4.0.0
 hypercorn==0.13.2
-hyperframe==6.0.1
-idna==3.3
-iso8601==1.0.2
-isort @ file:///tmp/build/80754af9/isort_1628603791788/work
-lazy-object-proxy @ file:///C:/ci_310/lazy-object-proxy_1642083437654/work
-mccabe @ file:///opt/conda/conda-bld/mccabe_1644221741721/work
-passlib==1.7.4
-platformdirs @ file:///tmp/build/80754af9/platformdirs_1638968569495/work
-priority==2.0.0
-pycodestyle @ file:///tmp/build/80754af9/pycodestyle_1636635402688/work
-pydantic==1.9.2
-pylint @ file:///C:/Windows/TEMP/abs_518eqlbmoo/croots/recipe/pylint_1659110354241/work
-pypika-tortoise==0.1.6
-python-multipart==0.0.5
-pytz==2022.2.1
-six==1.16.0
-sniffio==1.2.0
-starlette==0.19.1
-stevedore==3.5.0
-toml @ file:///tmp/build/80754af9/toml_1616166611790/work
-tomli @ file:///C:/Windows/TEMP/abs_ac109f85-a7b3-4b4d-bcfd-52622eceddf0hy332ojo/croots/recipe/tomli_1657175513137/work
-tomlkit @ file:///C:/Windows/TEMP/abs_3296qo9v6b/croots/recipe/tomlkit_1658946894808/work
 tortoise-orm==0.19.2
-typing_extensions @ file:///C:/Windows/TEMP/abs_dd2d0moa85/croots/recipe/typing_extensions_1659638831135/work
-virtualenv==20.13.1
-virtualenv-clone==0.5.7
-virtualenvwrapper==4.8.4
-wincertstore==0.2
-wrapt @ file:///C:/Windows/Temp/abs_7c3dd407-1390-477a-b542-fd15df6a24085_diwiza/croots/recipe/wrapt_1657814452175/work
-wsproto==1.2.0
+python-multipart==0.0.5
+passlib==1.7.4
+bcrypt==4.0.0
+pyjwt==2.4.0
