@@ -40,7 +40,9 @@ fastapi==0.81.0
 hypercorn==0.13.2
 tortoise-orm==0.19.2
 python-multipart==0.0.5
-
+passlib==1.7.4
+bcrypt==4.0.0
+pyjwt==2.4.0
 
 Deployment
 ==========
