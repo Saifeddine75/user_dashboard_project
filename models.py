@@ -2,7 +2,7 @@ from tortoise.contrib.pydantic import pydantic_model_creator
 from tortoise import fields
 from tortoise.models import Model
 from passlib.hash import bcrypt
-
+from uuid import UUID, uuid4
 
 class Users(Model):
     """ Authentification user models with credentials
@@ -17,7 +17,7 @@ class Users(Model):
     Class method
         Allow to get any user registered based on his username
     """
-    id = fields.IntField(pk=True)
+    id = fields.UUIDField()
     username = fields.CharField(50)
     password_hash = fields.CharField(128)
     
