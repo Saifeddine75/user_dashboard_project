@@ -17,7 +17,7 @@ class Users(Model):
     Class method
         Allow to get any user registered based on his username
     """
-    id = fields.UUIDField()
+    id = fields.IntField(pk=True)
     username = fields.CharField(50)
     password_hash = fields.CharField(128)
     
