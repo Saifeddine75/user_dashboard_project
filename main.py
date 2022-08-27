@@ -54,20 +54,21 @@ async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
     string, 
         User access token value and type
     """
-    user = await authenticate_user(form_data.username, form_data.password)
+    try:
+        user = await authenticate_user(form_data.username, form_data.password)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='User not found'
+        )
 
-    if not user:
-        return {'error': 'invalid credentials'}
-    
     # Create new user with credentials: username and hashed password
     user_obj = await Users_Pydantic.from_tortoise_orm(user)
 
     # To improve security: Remove password hash from the payload
     # (modify user_obj.dict())
-    print(user_obj.dict().pop('password_hash'))
-    print('dict without password_hash', user_obj.dict())
-    token = jwt.encode(user_obj.dict().pop('password_hash'), JWT_SECRET)
-
+    token = jwt.encode(user_obj.dict(), JWT_SECRET)
+    
     return {'access_token': token, 'token_type': 'bearer' }
 
 
