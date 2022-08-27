@@ -1,0 +1,9 @@
+# Python cache
+__pycache__
+
+# Project licence
+LICENSE
+
+# FastAPI database
+db.sqlite3*
+
