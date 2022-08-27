@@ -17,7 +17,7 @@ templates = Jinja2Templates(directory='templates')
 @router.get('/login')
 def login(request: Request):
     context = {'request': request}
-    return templates.TemplateResponse('dashboard/login.html', context)
+    return templates.TemplateResponse('authentication/login.html', context)
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
