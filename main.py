@@ -65,9 +65,12 @@ async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
     # Create new user with credentials: username and hashed password
     user_obj = await Users_Pydantic.from_tortoise_orm(user)
 
-    # To improve security: Remove password hash from the payload
-    # (modify user_obj.dict())
-    token = jwt.encode(user_obj.dict(), JWT_SECRET)
+    # *** To improve security: Don't show password hash in the payload
+    # Hash it another time to produce a secure access token
+    user_obj_safe = {}
+    user_obj_safe = user_obj.dict()
+    user_obj_safe['password_hash'] = bcrypt.hash(user_obj.dict['password_hash'])
+    token = jwt.encode(user_obj_safe, JWT_SECRET)
     
     return {'access_token': token, 'token_type': 'bearer' }
 
