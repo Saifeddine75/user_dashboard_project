@@ -1,0 +1,31 @@
+
+import json
+
+def test_register(client):
+    data = {
+        "username": "test@admin.com",
+        "password": "Test!5484idehoia6"
+    }
+    response = client.post("/users/", json.dumps(data))
+    assert response.status_code == 200
+    assert response.json()["username"] == "test@admin.com"
+    # TODO: assert response.json()["is_active"] == True
+
+
+def test_login(client):
+    """
+    Test route for login
+
+    Parameters
+    ----------
+    client : Client class (conftest.py)
+        Simulate client instance with test database test_db.db
+    """
+    data = {
+        "username": "test@admin.com",
+        "password": "Test!5484idehoia6"
+    }
+    response = client.post("/users/", json.dumps(data))
+    assert response.status_code == 200
+    assert response.json()["email"] == "test@admin.com"
+    # assert response.json()["is_active"] == True
