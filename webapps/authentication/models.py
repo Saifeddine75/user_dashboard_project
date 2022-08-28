@@ -4,6 +4,7 @@ from tortoise.models import Model
 from passlib.hash import bcrypt
 from uuid import UUID, uuid4
 
+
 class Users(Model):
     """ Authentification user models with credentials
 
@@ -20,7 +21,8 @@ class Users(Model):
     id = fields.IntField(pk=True)
     username = fields.CharField(50, unique=True)
     password_hash = fields.CharField(128)
-    
+    disabled = fields.BooleanField(default=True)
+
     @classmethod
     async def get_user(cls, username):
         return cls.get(username=username)
@@ -48,13 +50,3 @@ Users_Pydantic = pydantic_model_creator(Users, name='User')
 UsersIn_Pydantic = pydantic_model_creator(
     Users, name='UserIn', exclude_readonly=True
 )
-
-
-class UserInDB(Users):
-    hashed_password: str
-
-
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
