@@ -18,7 +18,7 @@ class Users(Model):
         Allow to get any user registered based on his username
     """
     id = fields.IntField(pk=True)
-    username = fields.CharField(50)
+    username = fields.CharField(50, unique=True)
     password_hash = fields.CharField(128)
     
     @classmethod
@@ -26,6 +26,18 @@ class Users(Model):
         return cls.get(username=username)
 
     def verify_password(self, password):
+        """ Verify password using password and password hash
+
+        Parameters
+        ----------
+        password : str
+            Password not hashed
+
+        Returns
+        -------
+        Bool
+            Password verification status
+        """
         return bcrypt.verify(password, self.password_hash)
 
 
