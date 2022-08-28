@@ -48,3 +48,13 @@ Users_Pydantic = pydantic_model_creator(Users, name='User')
 UsersIn_Pydantic = pydantic_model_creator(
     Users, name='UserIn', exclude_readonly=True
 )
+
+
+class UserInDB(Users):
+    hashed_password: str
+
+
+def get_user(db, username: str):
+    if username in db:
+        user_dict = db[username]
+        return UserInDB(**user_dict)

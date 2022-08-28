@@ -10,18 +10,12 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 # My FastAPI models
-from .models import Users, Users_Pydantic, UsersIn_Pydantic
-from .utils import RegistrationValidationForm
+from utils.models import Users, Users_Pydantic, UsersIn_Pydantic
+from utils.form_tools import RegistrationValidationForm
 
 
 router = APIRouter()
 templates = Jinja2Templates(directory='templates')
-
-# @router.get('/login')
-# def login(request: Request):
-#     context = {'request': request}
-#     return templates.TemplateResponse('authentication/login.html', context)
-
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
