@@ -18,7 +18,10 @@ from settings import oauth2_scheme, templates
 
 router = APIRouter(tags=['authentication'])
 router.add_api_route('/register/', register.register, methods=['GET'])
+router.add_api_route('/register/', register.register, response_model=Users_Pydantic, methods=['POST'])
 router.add_api_route('/login/', login.login, methods=['GET'])
+router.add_api_route('/login/', login.login, methods=['POST'])
+
 
 # *** Imrove security: Hide it in os.env
 JWT_SECRET = 'jpoja"%%6())iip"jçu%2é"!!ué"z4d484s686q46q4dzjziç"uçu'

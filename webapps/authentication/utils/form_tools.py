@@ -16,10 +16,10 @@ class Form():
             Name of the form, by default None
         """
         self.name = name
-        self.map_dict(form._dict)
+        # self.map_dict(form._dict)
 
 
-    def map_dict(cls, dict):
+    def map_dict(self, dict):
         """
         Create attributes from dict representing form fields
 
@@ -29,8 +29,9 @@ class Form():
             _description_
         """
         for k, v in dict.items():
-            setattr(cls, k, v)
-        return super(Form, cls).__init__()
+            setattr(self, k, v)
+        print(self.username)
+        super(Form, self).__init__()
 
 
 class FormModel(ABC):
@@ -43,8 +44,8 @@ class FormModel(ABC):
         structure containing form fields, by default None
     """
     def __init__(self, form, *args, **kwargs):
-        self._form = Form(form)
-        self._errors = {}
+        self.form = Form(form)
+        self.errors = {}
 
 
 # TODO: Make following class generic instantiate by dict form keys
@@ -53,11 +54,13 @@ class RegistrationValidationForm(FormModel):
     Form Registration Validation class
     """
     def __init__(self, form, *args, **kwargs):
-        super(Form).__init__(self, form, *args, **kwargs)
-        print("validate_form")
+        super().__init__(self, form, *args, **kwargs)
         print('RVF dict', self.__dict__)
-        print(self.username)
-        self.form.map_dict(form._dict)
+        print('RVF form', self.form)
+        print("validate_form")
+        print(self.form)
+        form = self.form.map_dict(form._dict)
+        print(form.username)
         self.is_valid = self.validate_form()
         
     def validate_form(self):
