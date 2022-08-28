@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    <title>User Registration</title>
+{% endblock %}
+
+{% block content %}
+<div class='container'>
+    <main class='form-signin w-300 m-auto' style='max-width:300px'>
+        <h1>Register</h1>
+        
+        {% for error in errors %}
+            <div class="alert alert-danger" role="alert">
+                {{ error }}a
+            </div>
+        {% endfor %}
+        <form method='POST'>
+            <div class="mb-3">
+                <label for="Email" class="form-label">Email address</label>
+                <input type="email" placeholder="Email" class="form-control" required name='username' class="form-control emailInput" id="Username" aria-describedby="emailHelp">
+            </div>
+            <div class="mb-3">
+                <label for="Password1" class="form-label">Password</label>
+                <input type="password" placeholder="Password" class="form-control" id="Password1" required name='password1' class="form-control passwordInput"  >
+            </div>
+            <div class="mb-3">
+                <label for="Password2" class="form-label">Password confirmation</label>
+                <input type="password" placeholder="Password confirmation" id="Password2" required name='password2' class="form-control passwordInput">
+            </div>
+            <div class="col text-center" style='padding-block:20px;'>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </div>
+        </form>
+    </main>
+</div>
+{% endblock %}
