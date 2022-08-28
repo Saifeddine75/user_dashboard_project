@@ -1,28 +1,122 @@
 # External import
 import jwt
 from passlib.hash import bcrypt
+from sqlalchemy.exc import IntegrityError
 
 # FastAPI import
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 # My FastAPI models
 from .models import Users, Users_Pydantic, UsersIn_Pydantic
+from .utils import RegistrationValidationForm
+
 
 router = APIRouter()
 templates = Jinja2Templates(directory='templates')
 
-@router.get('/login')
-def login(request: Request):
-    context = {'request': request}
-    return templates.TemplateResponse('dashboard/login.html', context)
+# @router.get('/login')
+# def login(request: Request):
+#     context = {'request': request}
+#     return templates.TemplateResponse('authentication/login.html', context)
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
+# *** Imrove security: Hide it in os.env
 JWT_SECRET = 'jpoja"%%6())iip"jçu%2é"!!ué"z4d484s686q46q4dzjziç"uçu'
+
+### USER LOGIN
+@router.get('/login')
+async def login(request: Request):
+
+    context = {'request': request}
+
+    return templates.TemplateResponse('authentication/login.html', context)
+
+
+@router.post('/login')
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = query_user(email)
+    if not user:
+        # you can return any response or error of your choice
+        raise InvalidCredentialsException
+    elif password != user['password']:
+        raise InvalidCredentialsException
+    try:
+        user = await authenticate_user(form_data.username, form_data.password)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='User not found'
+        )
+    context = {'request': request}
+
+    return templates.TemplateResponse('authentication/login.html', context)
+
+### USER REGISTRATION
+
+@router.get('/register')
+async def register(request: Request):
+
+    context = {'request': request}
+
+    return templates.TemplateResponse('authentication/register.html', context)
+
+
+@router.post('/register', response_model=Users_Pydantic)
+async def register(request: Request):
+
+    form = await request.form()
+    form = RegistrationValidationForm.get_valid_form(form)
+
+    if not form.is_valid:
+        errors = form.form_errors
+        print(errors)
+        context = {
+            'request': request,
+            'errors': errors
+        }
+
+    else:
+        errors = []
+        assert isinstance(form.username, str)
+        assert isinstance(form.password, str)
+
+        # print('form', form)
+
+        try:
+            user = await create_user(
+                UsersIn_Pydantic(
+                    username=form.get('username'),
+                    password_hash=form.get('password')
+                )
+            )
+            u = Users.get(username=form.username)
+            print('credentials safe', user.username, user.password)
+
+            token = await generate_token(
+                username=u.username,
+                password_hash=u.password
+            )
+            print('token', token)
+
+        except IntegrityError:
+            errors.append('Email already registered')
+
+        except Exception as exc:
+            # raise HTTPException(
+            #     status_code=status.HTTP_401_UNAUTHORIZED,
+            #     detail='User not found'
+            # )
+            print(exc)
+            errors.append(str(exc))
+
+        context = {'request': request}
+
+    return templates.TemplateResponse('authentication/register.html', context)
 
 
 async def authenticate_user(username: str, password: str):
@@ -49,7 +143,8 @@ async def authenticate_user(username: str, password: str):
 
 
 @router.post('/token')
-async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def generate_token(username: str, password: str):
+# async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
     """ Generate when user is authenticated
 
     Parameters
@@ -63,12 +158,14 @@ async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
         User access token value and type
     """
     try:
-        user = await authenticate_user(form_data.username, form_data.password)
+        print('form', username, password)
+        user = await authenticate_user(username, password)
     except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='User not found'
-        )
+        return {'error': 'failed to authenticated user'}
+        # raise HTTPException(
+        #     status_code=status.HTTP_404_NOT_FOUND,
+        #     detail='User not found'
+        # )
 
     # Create new user with credentials: username and hashed password
     user_obj = await Users_Pydantic.from_tortoise_orm(user)
@@ -153,10 +250,7 @@ async def create_user(user: UsersIn_Pydantic):
     Users instance, 
         User instance with input credentials, username and hashed password
     """
-    user_obj = Users(
-        username=user.username,
-        password_hash=bcrypt.hash(user.password_hash)
-    )
+    user_obj = Users(username=user.username, password_hash=bcrypt.hash(user.password_hash))
     await user_obj.save()
     return await Users_Pydantic.from_tortoise_orm(user_obj)
 
