@@ -1,17 +1,19 @@
 {% extends 'base.html' %}
 
 {% block title %}
-    <title>User Registration</title>
+    User Registration
 {% endblock %}
 
 {% block content %}
 <div class='container'>
-    <main class='form-signin w-300 m-auto' style='max-width:300px'>
+    <main class='form-signin w-350 m-auto' style='max-width:300px'>
         <h1>Register</h1>
         
-        {% for error in errors %}
+        {% for key in errors %}
             <div class="alert alert-danger" role="alert">
-                {{ error }}a
+            {% for error in errors[key] %}
+                Error in {{ key }} : <br>{{ error }}<br>
+            {% endfor %}
             </div>
         {% endfor %}
         <form method='POST'>
@@ -30,6 +32,11 @@
             <div class="col text-center" style='padding-block:20px;'>
                 <button type="submit" class="btn btn-primary">Register</button>
             </div>
+            {% if is_valid %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    You have been registered with success!
+            </div>
+            {% endif %}
         </form>
     </main>
 </div>

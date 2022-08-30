@@ -1,12 +1,12 @@
-{% extends '../base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}
-    <title>User Login</title>
+    User Login
 {% endblock %}
 
 {% block content %}
-<main class='form-signin w-300 m-auto' style='max-width:300px'>
-    <form>
+<main class='form-signin w-350 m-auto' style='max-width:300px'>
+    <form method='POST'>
     <div class="mb-3">
         <label for="Email" class="form-label">Email address</label>
         <input type="email" required class="form-control" id="email_id" name="email" aria-describedby="emailHelp">

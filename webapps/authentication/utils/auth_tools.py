@@ -13,6 +13,31 @@ from webapps.authentication.models import Users, Users_Pydantic, UsersIn_Pydanti
 from settings import oauth2_scheme, JWT_SECRET_KEY
 
 
+
+### AUTHENTICATE USER THROUGH HASH DECRYPT
+async def authenticate_user(username: str, password: str):
+    """ Authenticate a user with his username and his hash password decrypted
+
+    Parameters
+    ----------verify_password
+    username : str, 
+        Account username used in registration form
+    password : str, 
+        Account hash password used in registration form
+
+    Returns
+    -------
+    Users instance, 
+        Users instance of authenticated user
+    """
+    user = await Users.get(username=username)
+    if not user:
+        return False
+    if not user.verify_password(password):
+        return False
+    return user
+
+
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     """ Get current user authenticated by decrypting the encrypted access token
     
