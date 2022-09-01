@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    User Registration
+{% endblock %}
+
+{% block content %}
+<div class='container'>
+    <main class='form-signin w-350 m-auto' style='max-width:300px'>
+        <h1>Register</h1>
+        
+        {% for key in errors %}
+            <div class="alert alert-danger" role="alert">
+            {% for error in errors[key] %}
+                Error in {{ key }} : <br>{{ error }}<br>
+            {% endfor %}
+            </div>
+        {% endfor %}
+        
+        {% if not is_valid %}
+        <form method='POST'>
+            <div class="mb-3">
+                <label for="Email" class="form-label">Email address</label>
+                <input type="email" placeholder="Email" class="form-control" required name='username' id="Username" aria-describedby="emailHelp" class="form-control emailInput">
+            </div>
+            <div class="mb-3">
+                <label for="Password1" class="form-label">Password</label>
+                <input type="password" placeholder="Password" class="form-control" id="Password1" required name='password1' class="form-control passwordInput"  >
+            </div>
+            <div class="mb-3">
+                <label for="Password2" class="form-label">Password confirmation</label>
+                <input type="password" placeholder="Password confirmation" id="Password2" required name='password2' class="form-control passwordInput">
+            </div>
+
+            <div class="col text-center" style='padding-block:20px;'>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </div>
+        </form>
+        
+        <div class="col text-center">
+            <a href="{{ url_for('login') }}">Login ?</a>
+        </div>
+        
+        {% elif is_valid %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                You have been registered with success! You can now log in with your credentials
+        </div>
+        <div class="col text-center">
+            <a href="{{ url_for('login') }}">Login ?</a>
+        </div>
+        {% else %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Error in registration!
+        </div>
+        {% endif %}
+
+    </main>
+</div>
+{% endblock %}
