@@ -1,5 +1,7 @@
 # Packages import
+import os
 import jwt
+from datetime import datetime, timedelta
 from passlib.hash import bcrypt
 from sqlalchemy.exc import IntegrityError
 
@@ -9,17 +11,20 @@ from fastapi import APIRouter, Request, Form, Depends
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-# Settings import
-from settings import oauth2_scheme, templates, JWT_SECRET_KEY
-
-# Functions import
-from .utils.auth_tools import get_current_active_user, generate_token
+# App import
+from settings import oauth2_scheme, JWT_SECRET_KEY
+from settings import templates, CustomURLProcessor
+from .utils.auth_tools import generate_token, authenticate_user
+from .utils.auth_tools import get_current_active_user
+from .models import Users, Users_Pydantic, UsersIn_Pydantic
+from .models import Token
 from .forms import RegistrationValidationForm
 
-# Models import
-from .models import Users, Users_Pydantic, UsersIn_Pydantic
 
+JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+print(JWT_SECRET_KEY)
 
+# templates.env.globals['CustomURLProcessor'] = CustomURLProcessor
 router = APIRouter(tags=['authentication'])
 
 
@@ -47,87 +52,6 @@ async def index(token: str = Depends(oauth2_scheme)):
         Encrypted access token with JWT_SECRET value
     """
     return {'the_token': token}
-
-
-##########################################################
-#                        LOGIN                           #
-##########################################################
-
-@router.get('/login')
-async def login(request: Request):
-    """ Get login page with form
-
-    Parameters
-    ----------
-    request : Request
-        Get Request content 
-
-    Returns
-    -------
-    TemplateResponse
-        Return login template with form
-    """
-
-    context = {'request': request}
-
-    return templates.TemplateResponse('authentication/login.html', context)
-
-
-@router.get('/users/me', response_model=Users_Pydantic)
-async def read_users_me(current_user: Users_Pydantic = Depends(get_current_active_user)):
-    """ Get current user through auth payload decoding
-
-    Parameters
-    ----------
-    current_user : Users_Pydantic, optional
-        User get through "get_current_active_user function", by default Depends(get_current_active_user)
-
-    Returns
-    -------
-    Users_Pydantic instance
-        Return Users_Pydantic instance of actual user 
-        (This Pydantic model allow to hide read-only fields)
-    """
-    return current_user
-
-
-@router.post("/login")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    """ Login user and create his access token
-
-    Parameters
-    ----------
-    form_data : OAuth2PasswordRequestForm, optional
-        Form login provided by fastapi.security package, by default Depends()
-
-    Returns
-    -------
-    _type_
-        _description_
-
-    Raises
-    ------
-    HTTPException
-        _description_
-    """
-    assert True!=True
-    print('form_data', form_data)
-    user = Users.get(username=form_data.username)
-    if not user:
-        raise HTTPException(
-            status_code=400, detail="Incorrect username or password")
-
-    print('credentials safe', user.username, user.password)
-
-    token = await generate_token(
-        username=user.username,
-        password_hash=user.password
-    )
-    print('token', token)
-
-    return token
-    # return {"access_token": user.username, "token_type": "bearer"}
-
 
 
 ##########################################################
@@ -170,45 +94,160 @@ async def register(request: Request):
     form = RegistrationValidationForm.get_valid_form(form)
 
     if not form.is_valid:
-        errors = form.errors()
-        errors = {k: v for k, v in errors.items() if v}
-        
-        context = {
-            'request': request,
-            'errors': errors,
-            'is_valid': False
-        }
+        form_errors = form.errors()
 
     else:
+        form_errors = {}
+        errors = []
+
         username = form.get('username')
         password = form.get('password')
 
-        errors = []
-
         try:
-            if not Users.get(username=username):
-                user = await create_user(
-                    UsersIn_Pydantic(
-                        username=username,
-                        password_hash=password
-                    )
+            user = await create_user(
+                UsersIn_Pydantic(
+                    username=username,
+                    password_hash=password,
+                    city='',
+                    disabled=False,  # For test
                 )
-            else:
-                errors.append('This username is already used!')
-
-
-        except IntegrityError:
-            errors.append('This email is already registered')
+            )
 
         except Exception as exc:
-            errors.append(str(exc))
-        
-        print('errors', errors)
-        is_valid = False if errors else True
+            if 'UNIQUE constraint failed' in str(exc):
+                errors.append('This email is already registered!')
+            else:
+                errors.append(str(exc))
 
-        context = {
-            'request': request,
-            'is_valid': is_valid
-        }
+        form_errors['submission'] = errors
+
+    errors = {k: v for k, v in form_errors.items() if v}
+    print(len(errors))
+    is_valid = True if len(errors)==0 else False
+
+    context = {
+        'request': request,
+        'errors': errors,
+        'is_valid': is_valid
+    }
 
     return templates.TemplateResponse('authentication/register.html', context)
+
+
+##########################################################
+#                        LOGIN                           #
+##########################################################
+
+
+@router.get('/users/me', response_model=Users_Pydantic)
+async def read_users_me(current_user: Users_Pydantic = Depends(get_current_active_user)):
+    """ Get current user through auth payload decoding
+
+    Parameters
+    ----------
+    current_user : Users_Pydantic, optional
+        User get through "get_current_active_user function", by default Depends(get_current_active_user)
+
+    Returns
+    -------
+    Users_Pydantic instance
+        Return Users_Pydantic instance of actual user 
+        (This Pydantic model allow to hide read-only fields)
+    """
+    return current_user
+
+
+@router.get('/login')
+async def login(request: Request):
+    """ Get login page with form
+
+    Parameters
+    ----------
+    request : Request
+        Get Request content 
+
+    Returns
+    -------
+    TemplateResponse
+        Return login template with form
+    """
+
+    context = {'request': request}
+
+    return templates.TemplateResponse('authentication/login.html', context)
+
+
+@router.post('/login')
+async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
+    """ Get login page with form
+
+    Parameters
+    ----------
+    request : Request
+        Get Request content 
+
+    Returns
+    -------
+    TemplateResponse
+        Return login template with form
+    """
+
+    form = await request.form()
+    print(form.keys())
+
+    print('GENERATE TOKEN')
+    generate_token(form_data)
+
+
+    # context = {
+    #     'request': request,
+    #     'user': user
+    # }
+
+    # return templates.TemplateResponse('index.html', context)
+
+@router.post('/token', response_model=Token)
+async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    """ Generate when user is authenticated
+
+    Parameters
+    ----------
+    form_data : OAuth2PasswordRequestForm, optional, 
+        Login Form that are used in this endpoint, by default Depends()
+
+    Returns
+    -------
+    string, 
+        User access token value and type
+    """
+    # user = await authenticate_user(form_data.username, form_data.password)
+
+    # if not user:
+    #     return {'error': 'invalid credentials'}
+
+    # user_obj_safe = {}
+    username = 'saif@admin.com'
+    password = 'Test92600%'
+    # username = form_data.username
+    # password = form_data.password
+
+    try:
+        print('form', username, password)
+        user = await authenticate_user(username, password)
+    except Exception as exc:
+        print('exception', exc)
+        return {'error': 'failed to authenticate user'}
+
+    # Create new user with credentials: username and hashed password
+    user_obj = await Users_Pydantic.from_tortoise_orm(user)
+
+    # Hash it 10 times to produce a more secure access token
+    print('OK')
+    ph = user_obj.password_hash
+    for _ in range(10):
+        ph = bcrypt.hash(ph)
+    user_obj.password_hash = str(ph)
+
+    token = jwt.encode(user_obj.dict(), JWT_SECRET_KEY)
+
+    return {'access_token': token, 'token_type': 'bearer'}
