@@ -5,6 +5,15 @@ from passlib.hash import bcrypt
 from uuid import UUID, uuid4
 
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Union[str, None] = None
+
+
 class Users(Model):
     """ Authentification user models with credentials
 
@@ -21,7 +30,7 @@ class Users(Model):
     id = fields.IntField(pk=True)
     username = fields.CharField(50, unique=True)
     password_hash = fields.CharField(128)
-    disabled = fields.BooleanField(default=True)
+    disabled = fields.BooleanField(default=False)
 
     @classmethod
     async def get_user(cls, username):
