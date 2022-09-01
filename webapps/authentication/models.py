@@ -1,9 +1,13 @@
+# External import
+from typing import Union
+from passlib.hash import bcrypt
+
+# FastAPI and related import
+from pydantic import BaseModel
 from tortoise.contrib.pydantic import pydantic_model_creator
 from tortoise import fields
 from tortoise.models import Model
-from passlib.hash import bcrypt
 from uuid import UUID, uuid4
-
 
 class Token(BaseModel):
     access_token: str
@@ -53,9 +57,14 @@ class Users(Model):
 
 
 # Custom data types that represents what users have
-Users_Pydantic = pydantic_model_creator(Users, name='User')
+Users_Pydantic = pydantic_model_creator(
+    Users, name='User')
 
 # Custom data types that represents what users can pass as input
 UsersIn_Pydantic = pydantic_model_creator(
     Users, name='UserIn', exclude_readonly=True
 )
+
+
+class UserInDB(Users):
+    hashed_password: str

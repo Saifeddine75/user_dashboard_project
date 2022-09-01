@@ -4,25 +4,26 @@ import jwt
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt
 from sqlalchemy.exc import IntegrityError
+from typing import Union
 
 # FastAPI framework import
 from fastapi import HTTPException, status
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import RedirectResponse
 
 # App import
-from settings import oauth2_scheme, JWT_SECRET_KEY
-from settings import templates, CustomURLProcessor
-from .utils.auth_tools import generate_token, authenticate_user
-from .utils.auth_tools import get_current_active_user
+from settings import oauth2_scheme
+from settings import ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from settings import templates
+from .utils.auth_tools import authenticate_user
+from .utils.auth_tools import get_current_active_user, get_current_user # test
 from .models import Users, Users_Pydantic, UsersIn_Pydantic
 from .models import Token
 from .forms import RegistrationValidationForm
 
-
 JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
-print(JWT_SECRET_KEY)
 
 # templates.env.globals['CustomURLProcessor'] = CustomURLProcessor
 router = APIRouter(tags=['authentication'])
@@ -38,7 +39,7 @@ router = APIRouter(tags=['authentication'])
 
 ### ROOT
 @router.get("/")
-async def index(token: str = Depends(oauth2_scheme)):
+async def index(current_user: Users_Pydantic = Depends(get_current_active_user)):
     """ API Root Path
 
     Parameters
@@ -51,7 +52,14 @@ async def index(token: str = Depends(oauth2_scheme)):
     token, 
         Encrypted access token with JWT_SECRET value
     """
-    return {'the_token': token}
+    print('OK')
+    print('user', current_user)
+    context = {
+        'user': current_user
+    }
+    return templates.TemplateResponse('/index.html', context)
+
+    # return {'the_token': token}
 
 
 ##########################################################
@@ -139,8 +147,8 @@ async def register(request: Request):
 ##########################################################
 
 
-@router.get('/users/me', response_model=Users_Pydantic)
-async def read_users_me(current_user: Users_Pydantic = Depends(get_current_active_user)):
+@router.post('/users/me', response_model=Users_Pydantic)
+async def read_users_me(current_user: Users_Pydantic = Depends(get_current_user)):
     """ Get current user through auth payload decoding
 
     Parameters
@@ -176,38 +184,22 @@ async def login(request: Request):
 
     return templates.TemplateResponse('authentication/login.html', context)
 
+# def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
+def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
+    # to_encode = data.copy()
+    # if expires_delta:
+    #     expire = datetime.utcnow() + expires_delta
+    # else:
+    #     expire = datetime.utcnow() + timedelta(minutes=15)
+    # to_encode.update({"exp": expire})
 
-@router.post('/login')
-async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
-    """ Get login page with form
-
-    Parameters
-    ----------
-    request : Request
-        Get Request content 
-
-    Returns
-    -------
-    TemplateResponse
-        Return login template with form
-    """
-
-    form = await request.form()
-    print(form.keys())
-
-    print('GENERATE TOKEN')
-    generate_token(form_data)
+    # encoded_jwt = jwt.encode(user_obj.dict(), JWT_SECRET_KEY)
+    encoded_jwt = jwt.encode(data, JWT_SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
 
 
-    # context = {
-    #     'request': request,
-    #     'user': user
-    # }
-
-    # return templates.TemplateResponse('index.html', context)
-
-@router.post('/token', response_model=Token)
-async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
+@router.post('/login', response_model=Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     """ Generate when user is authenticated
 
     Parameters
@@ -220,34 +212,48 @@ async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
     string, 
         User access token value and type
     """
-    # user = await authenticate_user(form_data.username, form_data.password)
+    user = await authenticate_user(form_data.username, form_data.password)
 
-    # if not user:
-    #     return {'error': 'invalid credentials'}
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    else:
+        # Create new user with credentials: username and hashed password
+        user_obj = await Users_Pydantic.from_tortoise_orm(user)
 
-    # user_obj_safe = {}
-    username = 'saif@admin.com'
-    password = 'Test92600%'
-    # username = form_data.username
-    # password = form_data.password
+        # Hash it 10 times to produce a more secure access token
+        print('OK')
 
-    try:
-        print('form', username, password)
-        user = await authenticate_user(username, password)
-    except Exception as exc:
-        print('exception', exc)
-        return {'error': 'failed to authenticate user'}
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
+        )
+        
+        context = {
+            'access_token': access_token,
+            'token_type': 'bearer'
+        }
 
-    # Create new user with credentials: username and hashed password
-    user_obj = await Users_Pydantic.from_tortoise_orm(user)
+        return context
 
-    # Hash it 10 times to produce a more secure access token
-    print('OK')
-    ph = user_obj.password_hash
-    for _ in range(10):
-        ph = bcrypt.hash(ph)
-    user_obj.password_hash = str(ph)
 
-    token = jwt.encode(user_obj.dict(), JWT_SECRET_KEY)
+# @router.post('/login')
+# async def login(current_user: Users_Pydantic = Depends()):
+#     """ Generate when user is authenticated
 
-    return {'access_token': token, 'token_type': 'bearer'}
+#     Parameters
+#     ----------
+#     form_data : OAuth2PasswordRequestForm, optional, 
+#         Login Form that are used in this endpoint, by default Depends()
+
+#     Returns
+#     -------
+#     string, 
+#         User access token value and type
+#     """
+#     login_for_access_token(current_user)
+
+#     return templates.TemplateResponse('/index.html', context)
