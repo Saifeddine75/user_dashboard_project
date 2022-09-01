@@ -9,13 +9,24 @@
     <form method='POST'>
     <div class="mb-3">
         <label for="Email" class="form-label">Email address</label>
-        <input type="email" required class="form-control" id="email_id" name="email" aria-describedby="emailHelp">
+        <input type="email" required class="form-control" id="email_id" name="username" aria-describedby="emailHelp">
     </div>
     <div class="mb-3">
         <label for="Password" class="form-label">Password</label>
         <input type="password" required class="form-control" id="Password" name="password">
     </div>
-    <button type="submit" class="btn btn-primary">Login</button>
+    <div class="col text-center">
+        <button type="submit" class="btn btn-primary">Login</button>
+    <div class="col text-center">
     </form>
+
+
+
 </main>
 {% endblock %}
+
+<!--
+    <div class="col text-center" style='padding-block:20px;'>
+        <a href="#{{ url_for( 'register') }}">SignUp ?</a>
+    <div class="col text-center"> 
+-->

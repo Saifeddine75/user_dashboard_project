@@ -16,6 +16,8 @@
             {% endfor %}
             </div>
         {% endfor %}
+        
+        {% if not is_valid %}
         <form method='POST'>
             <div class="mb-3">
                 <label for="Email" class="form-label">Email address</label>
@@ -29,15 +31,29 @@
                 <label for="Password2" class="form-label">Password confirmation</label>
                 <input type="password" placeholder="Password confirmation" id="Password2" required name='password2' class="form-control passwordInput">
             </div>
+
             <div class="col text-center" style='padding-block:20px;'>
                 <button type="submit" class="btn btn-primary">Register</button>
             </div>
-            {% if is_valid %}
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    You have been registered with success!
-            </div>
-            {% endif %}
         </form>
+        
+        <div class="col text-center">
+            <a href="{{ url_for('login') }}">Login ?</a>
+        </div>
+        
+        {% elif is_valid %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                You have been registered with success! You can now log in with your credentials
+        </div>
+        <div class="col text-center">
+            <a href="{{ url_for('login') }}">Login ?</a>
+        </div>
+        {% else %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Error in registration!
+        </div>
+        {% endif %}
+
     </main>
 </div>
 {% endblock %}
