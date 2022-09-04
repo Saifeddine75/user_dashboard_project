@@ -28,5 +28,9 @@ except ImportError:
     # Should be local and DEBUG
     pass
 
-os.environ['JWT_SECRET_KEY'] = 'jpoja"TF6())iip"SMQaWjXVTUçu%2é"!!ué"z4d454z86431sSD4s686qzXXSz46qodkpoe687z;ùxs5334q4dzjziç"uçu'
-JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+from dotenv import load_dotenv
+
+load_dotenv(".env")
+
+JWT_SECRET_KEY = os.environ["SECRET_KEY"]
+

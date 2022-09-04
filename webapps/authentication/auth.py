@@ -19,7 +19,7 @@ from settings import ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from settings import templates
 from .utils.auth_tools import authenticate_user
 from .utils.auth_tools import get_current_active_user, get_current_user # test
-from .models import Users, Users_Pydantic, UsersIn_Pydantic
+from .models import Users, Users_Pydantic, UsersIn_Pydantic, UserUpdateRequest
 from .models import Token
 from .forms import RegistrationValidationForm
 
@@ -198,7 +198,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     return encoded_jwt
 
 
-@router.post('/login', response_model=Token)
+@router.post('/login')
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     """ Generate when user is authenticated
 
@@ -213,6 +213,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         User access token value and type
     """
     user = await authenticate_user(form_data.username, form_data.password)
+    user_obj = None
 
     if not user:
         raise HTTPException(
@@ -223,37 +224,69 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     else:
         # Create new user with credentials: username and hashed password
         user_obj = await Users_Pydantic.from_tortoise_orm(user)
-
-        # Hash it 10 times to produce a more secure access token
-        print('OK')
-
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": user.username}, expires_delta=access_token_expires
-        )
         
-        context = {
-            'access_token': access_token,
-            'token_type': 'bearer'
-        }
 
-        return context
+    context = {
+        'request': Request,
+        'user': user_obj
+    }
+
+    return context
 
 
-# @router.post('/login')
-# async def login(current_user: Users_Pydantic = Depends()):
-#     """ Generate when user is authenticated
+@router.get('/profile')
+async def profile(request: Request):
 
-#     Parameters
-#     ----------
-#     form_data : OAuth2PasswordRequestForm, optional, 
-#         Login Form that are used in this endpoint, by default Depends()
+    context = {'request': request}
 
-#     Returns
-#     -------
-#     string, 
-#         User access token value and type
-#     """
-#     login_for_access_token(current_user)
+    return templates.TemplateResponse('authentication/profile.html', context)
 
-#     return templates.TemplateResponse('/index.html', context)
+
+@router.post('/profile', response_model=Users_Pydantic)
+async def profile(request: Request, user_update: UserUpdateRequest):
+
+    form = await request.form()
+    form = RegistrationValidationForm.get_valid_form(form)
+
+    if not form.is_valid:
+        form_errors = form.errors()
+
+    else:
+        form_errors = {}
+        errors = []
+
+        username = form.get('username')
+        password = form.get('password')
+
+        try:
+            # Update user profile
+            user = Users.get_user(username=username)
+            if user_update.pseudo is not None:
+                user.pseudo = user_update.pseudo
+            if user_update.password is not None:
+                user.password = user_update.password
+            if user_update.city is not None:
+                user.city=user_update.city
+
+
+        except Exception as exc:
+            if 'UNIQUE constraint failed' in str(exc):
+                errors.append('This email is already registered!')
+            else:
+                errors.append(str(exc))
+
+        form_errors['submission'] = errors
+
+    errors = {k: v for k, v in form_errors.items() if v}
+    print(len(errors))
+    is_valid = True if len(errors) == 0 else False
+
+    context = {
+        'request': request,
+        'errors': errors,
+        'is_valid': is_valid
+    }
+
+    return templates.TemplateResponse('authentication/profile.html', context)
+
+

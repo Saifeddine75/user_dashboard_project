@@ -1,6 +1,7 @@
 # External import
 from typing import Union
 from passlib.hash import bcrypt
+from typing import Optional, List
 
 # FastAPI and related import
 from pydantic import BaseModel
@@ -34,6 +35,8 @@ class Users(Model):
     id = fields.IntField(pk=True)
     username = fields.CharField(50, unique=True)
     password_hash = fields.CharField(128)
+    pseudo = fields.CharField(30)
+    city = fields.CharField(30, default='', blank=True)
     disabled = fields.BooleanField(default=False)
 
     @classmethod
@@ -68,3 +71,13 @@ UsersIn_Pydantic = pydantic_model_creator(
 
 class UserInDB(Users):
     hashed_password: str
+
+
+# PUT
+class UserUpdateRequest(BaseModel):
+    """
+    Update user class attributes
+    """
+    pseudo: Optional[str]
+    password: Optional[str]
+    city: Optional[str]

@@ -44,6 +44,7 @@ passlib==1.7.4
 bcrypt==4.0.0
 pyjwt==2.4.0
 Jinja2==3.1.2
+python-dotenv==0.20.0
 
 Deployment
 ==========
